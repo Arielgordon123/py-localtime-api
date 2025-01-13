@@ -3,5 +3,8 @@
 {
 	"name": "Python 3",
 	"image": "mcr.microsoft.com/devcontainers/python:0-3.9",
-	"postCreateCommand": "pip3 install --user pytz"
+	"postCreateCommand": "pip3 install --user pytz",
+	"features":{
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    },
 }

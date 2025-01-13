@@ -38,8 +38,7 @@ CONFIG_FILE = "py-localtime-api.json"
 import locale, datetime, http.server, json, signal, os, sys, pytz
 
 # for testing: use the config-file from the repo
-config_file = os.path.join(
-  os.path.dirname(sys.argv[0]),"..","..","..","etc",CONFIG_FILE)
+config_file = os.path.join(CONFIG_FILE)
 
 if not os.path.exists(config_file):
   config_file = os.path.join("/etc",CONFIG_FILE)
@@ -52,36 +51,41 @@ with open(config_file,"r") as f:
 class LocalTimeApi(http.server.BaseHTTPRequestHandler):
   """ Request-handler class """
 
-  def log_request(*args,**kw):
-    """ prevent logging """
-    pass
 
   def do_GET(self):
     """ process get-requests """
 
     tz = pytz.timezone(SETTINGS["TZ_NAME"])
     now = datetime.datetime.now(tz)
-    tt = now.timetuple()
-    tt_tuple = (tt.tm_year,tt.tm_mon,tt.tm_mday,tt.tm_hour,tt.tm_min,
-                tt.tm_sec,tt.tm_wday,tt.tm_yday,tt.tm_isdst)
-    dst_dates = [x for x in tz._utc_transition_times if x.year == now.year]
-    data = {
-      "abbreviation": now.tzname(),
-      "client_ip": self.address_string(),
-      "datetime": now.isoformat(),
-      "day_of_week": now.isoweekday() % 7,    # worldtimeapi: Sunday==0
-      "day_of_year": tt.tm_yday,
-      "dst": now.dst().seconds > 0,
-      "dst_from": dst_dates[0].isoformat(),
-      "dst_offset": now.dst().seconds,
-      "dst_until": dst_dates[1].isoformat(),
-      "raw_offset": int(now.utcoffset().seconds),
-      "timezone": tz.zone,
-      "unixtime": int(now.timestamp()),
-      "utc_datetime": now.astimezone(tz=datetime.timezone.utc).isoformat(),
-      "utc_offset": now.isoformat()[-6:],
-      "week_number": int(now.strftime("%W")),
-      "struct_time": tt_tuple 
+    data = {}
+    if self.path == "/":
+        
+      tt = now.timetuple()
+      tt_tuple = (tt.tm_year,tt.tm_mon,tt.tm_mday,tt.tm_hour,tt.tm_min,
+                  tt.tm_sec,tt.tm_wday,tt.tm_yday,tt.tm_isdst)
+      dst_dates = [x for x in tz._utc_transition_times if x.year == now.year]
+      data = {
+        "abbreviation": now.tzname(),
+        "client_ip": self.address_string(),
+        "datetime": now.isoformat(),
+        "day_of_week": now.isoweekday() % 7,    # worldtimeapi: Sunday==0
+        "day_of_year": tt.tm_yday,
+        "dst": now.dst().seconds > 0,
+        "dst_from": dst_dates[0].isoformat(),
+        "dst_offset": now.dst().seconds,
+        "dst_until": dst_dates[1].isoformat(),
+        "raw_offset": int(now.utcoffset().seconds),
+        "timezone": tz.zone,
+        "unixtime": int(now.timestamp()),
+        "utc_datetime": now.astimezone(tz=datetime.timezone.utc).isoformat(),
+        "utc_offset": now.isoformat()[-6:],
+        "week_number": int(now.strftime("%W")),
+        "struct_time": tt_tuple 
+        }
+
+    elif self.path == "/raw_offset":
+      data = {
+        "raw_offset": int(now.utcoffset().seconds),
       }
 
     json_data = json.dumps(data,indent=2).encode(encoding='utf_8')
